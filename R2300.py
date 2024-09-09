@@ -96,6 +96,9 @@ def update_plot2():
     global amplitude2
     global amplitude3
     global flag
+    global flag1
+    global flag2
+    global flag3
     global scan_flag
     data = np.zeros(483)
     color = np.zeros(483)
@@ -117,12 +120,12 @@ def update_plot2():
         ax.set_ylim(0, 10)  # 设置y轴范围
         fig.colorbar(scatter_plot, ax=ax)  # 添加颜色条
     
-    #plt.show(block=False)  # 显示图像，但不阻塞
+    plt.show(block=False)  # 显示图像，但不阻塞
 
     while True:
         # 更新数据
         if scan_flag == 1:
-            if flag == 0:
+            if flag == 0 and flag1 ==0 and flag2 == 0 and flag3 == 0:
                 data = flat_distance  # 示例更新
                 data1 = flat_distance1  # 示例更新
                 data2 = flat_distance2  # 示例更新
@@ -154,6 +157,9 @@ def update_data():
     global amplitude2
     global amplitude3
     global flag
+    global flag1
+    global flag2
+    global flag3
     global scan_flag
     sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)   #创建一个socket服务器对象，其中socket.AF_INET代表用的是IPv4，如果是socket.AF_INET6则是IPv6； socket.SOCK_DGRAM代表UDP；SOCK_STREAM是TCP
     sk.bind(('',10000))   #将本机IP和10000号端口设置为UDP的接口，R2300从这个端口接入
@@ -189,7 +195,7 @@ def update_data():
                 flag =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
 
             if (form_data.layer_index ==1) and form_data.packet_number ==1:#判断是否是第一层，layer_index分别为：0，1，2，3；同时判断是否为此层的第一个包
-                flag =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
+                flag1 =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
                 distance=[]#新建空白的distance列表；在后续循环中重新执行这一句等于清空原来的数据；因为下面用的都是append方法，所以需要先清空
                 amplitude1= []#同上
                 flat_distance1 = []
@@ -209,10 +215,10 @@ def update_data():
                     angle =abs(i+291-220)*(1.7453/500)
                     #print(angle)
                     flat_distance1.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
-                flag =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
+                flag1 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
 
             if (form_data.layer_index ==2) and form_data.packet_number ==1:#判断是否是第一层，layer_index分别为：0，1，2，3；同时判断是否为此层的第一个包
-                flag =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
+                flag2 =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
                 distance=[]#新建空白的distance列表；在后续循环中重新执行这一句等于清空原来的数据；因为下面用的都是append方法，所以需要先清空
                 amplitude2= []#同上
                 flat_distance2 = []
@@ -232,10 +238,10 @@ def update_data():
                     angle =abs(i+291-220)*(1.7453/500)
                     #print(angle)
                     flat_distance2.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
-                flag =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
+                flag2 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
 
             if (form_data.layer_index ==3) and form_data.packet_number ==1:#判断是否是第一层，layer_index分别为：0，1，2，3；同时判断是否为此层的第一个包
-                flag =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
+                flag3 =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
                 distance=[]#新建空白的distance列表；在后续循环中重新执行这一句等于清空原来的数据；因为下面用的都是append方法，所以需要先清空
                 amplitude3= []#同上
                 flat_distance3 = []
@@ -254,7 +260,7 @@ def update_data():
                     angle =abs(i+291-220)*(1.7453/500)
                     #print(angle)
                     flat_distance3.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
-                flag =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
+                flag3 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
 
 
 def start_scan():
@@ -264,6 +270,55 @@ def start_scan():
 def stop_scan():
     global scan_flag
     scan_flag =0
+
+def capture_lines():
+    global flat_distance
+    global flat_distance1
+    global flat_distance2
+    global flat_distance3
+    global amplitude
+    global amplitude1
+    global amplitude2
+    global amplitude3
+    global scan_flag
+
+    #scan_flag =0
+    capture_distance = flat_distance
+    capture_distance1 = flat_distance1
+    capture_distance2 = flat_distance2
+    capture_distance3 = flat_distance3
+    capture_amplitude = amplitude
+    capture_amplitude1 = amplitude1
+    capture_amplitude2 = amplitude2
+    capture_amplitude3 = amplitude3
+
+# 创建 2x2 子图网格
+    fig1, axs = plt.subplots(2, 2)
+
+    # 绘制四个散点图
+    axs[0, 0].scatter(np.arange(483), capture_distance,c="red")
+    axs[0, 0].set_title('layer 1')
+
+    axs[0, 1].scatter(np.arange(483), capture_distance1,c="green")
+    axs[0, 1].set_title('layer 2')
+
+    axs[1, 0].scatter(np.arange(483), capture_distance2,c="yellow")
+    axs[1, 0].set_title('layer 3')
+
+    axs[1, 1].scatter(np.arange(483), capture_distance3,c="blue")
+    axs[1, 1].set_title('layer 4')
+    
+
+    # 显示图形
+    plt.tight_layout()  # 自动调整子图间距
+    # 将绘制图像的操作放在主线程中执行
+    root.after(0, show_new_figure, fig1)
+
+
+
+def show_new_figure(fig):
+    plt.figure(fig.number)
+    plt.show()
 
 #主函数，用于启动两个线程以及生成图形界面
 if __name__ =="__main__":
@@ -290,6 +345,10 @@ if __name__ =="__main__":
     button2 = tk.Button(root, text="Stop", command=stop_scan)
     button1.pack()
     button2.pack()
+    #创建抓取按钮
+    button3 = tk.Button(root, text="Capture", command=capture_lines)
+    button3.pack()
+
     root.mainloop()
 
     
