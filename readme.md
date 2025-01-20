@@ -17,3 +17,11 @@
 
 ## v1.3.1 20240910
 创建一个test.py，验证画图的方法，效果不错，后续在这个新的框架上把接收UDP数据、处理数据、显示图像三个部分都集成到一起
+
+## v1.4 20250120
+在v1.3的基础上，修改了capture按钮点击时保存当前数据到全局capture_position_amplitude_data中，并新建captured_flag标志位
+当captured_flag为true时，会用当前图像的position_amplitude_data[i]-capture_position_amplitude_data[i],并通过np计算减出来的差值绝对值大于0.5（可修改）的点数
+当这个点数大于50个时，将当前曲线用红色显示，当小于50个时，将当前曲线用绿色显示。
+并且大于50个时通过print函数输出Alarm: layer 0,different counts 172
+在此基础上，后续如果做IO控制，就可以在这个print函数后编写IO控制代码
+整体而言，这个版本基本实现了功能。
