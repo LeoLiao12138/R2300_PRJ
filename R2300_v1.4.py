@@ -71,23 +71,22 @@ def data_transfer(raw_data):
     return form_data  #返回按照格式处理好的数据
 # UDP 接收线程
 def udp_receiver(q):
-    flat_distance = np.zeros(483)
-    flat_distance1 = np.zeros(483)
-    flat_distance2 = np.zeros(483)
-    flat_distance3 = np.zeros(483)
-    amplitude = np.zeros(483)
-    amplitude1 = np.zeros(483)
-    amplitude2 = np.zeros(483)
-    amplitude3 = np.zeros(483)
+    distance =[]
+    flat_distance =[0 for _ in range(483)]# np.zeros(483)
+    flat_distance1 =[0 for _ in range(483)]# np.zeros(483)
+    flat_distance2 =[0 for _ in range(483)]# np.zeros(483)
+    flat_distance3 =[0 for _ in range(483)]# np.zeros(483)
+    amplitude =[0 for _ in range(483)]# np.zeros(483)
+    amplitude1 =[0 for _ in range(483)]# np.zeros(483)
+    amplitude2 =[0 for _ in range(483)]# np.zeros(483)
+    amplitude3 =[0 for _ in range(483)]# np.zeros(483)
     flag = 0
     flag1 = 0
     flag2 = 0
     flag3 = 0
     data =np.zeros([483,8])
     q.append(data)
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(('', 10000))
-    print("UDP receiver started")
+
     while not stop_flag.is_set():
         
         raw_data, addr = sock.recvfrom(10000)
@@ -101,17 +100,15 @@ def udp_receiver(q):
                 amplitude.append((form_data.data[i]>>20)&0xfff)#高12bit为能量强度
                 distance.append((form_data.data[i]&0xfffff)/1000)#低20bit为距离
                 #将100°(弧度1.7453）分成483个点，计算当前点到中心点的弧度
-                angle =abs(i-220)*(1.7453/500)
-                #print(angle)
+                angle =abs(i-242)*(1.7453/483)
                 #计算垂直距离，即报文反馈的距离*cos(angle)
                 flat_distance.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
-            #print(len(form_data.data))
 
         if (form_data.layer_index ==0) and form_data.packet_number ==2:#判断是否是第一层，layer_index分别为：0，1，2，3；同时判断是否为此层的第二个包
             for i in range(0, len(form_data.data)):
                 amplitude.append((form_data.data[i]>>20)&0xfff)#切割距离和强度
                 distance.append((form_data.data[i]&0xfffff)/1000)
-                angle =abs(i+291-220)*(1.7453/500)
+                angle =abs(i+291-242)*(1.7453/483)
                 #print(angle)
                 flat_distance.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
             flag =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
@@ -125,7 +122,7 @@ def udp_receiver(q):
                 amplitude1.append((form_data.data[i]>>20)&0xfff)#高12bit为能量强度
                 distance.append((form_data.data[i]&0xfffff)/1000)#低20bit为距离
                 #将100°分成483个点，每个点的弧度
-                angle =abs(i-220)*(1.7453/500)
+                angle =abs(i-242)*(1.7453/483)
                 #print(angle)
                 flat_distance1.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
             #print(len(form_data.data))
@@ -134,35 +131,12 @@ def udp_receiver(q):
             for i in range(0, len(form_data.data)):
                 amplitude1.append((form_data.data[i]>>20)&0xfff)#切割距离和强度
                 distance.append((form_data.data[i]&0xfffff)/1000)
-                angle =abs(i+291-220)*(1.7453/500)
+                angle =abs(i+291-242)*(1.7453/483)
                 #print(angle)
                 flat_distance1.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
             flag1 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
 
         if (form_data.layer_index ==2) and form_data.packet_number ==1:#判断是否是第三层，layer_index分别为：0，1，2，3；同时判断是否为此层的第一个包
-            flag2 =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
-            distance=[]#新建空白的distance列表；在后续循环中重新执行这一句等于清空原来的数据；因为下面用的都是append方法，所以需要先清空
-            amplitude2= []#同上
-            flat_distance2 = []
-            for i in range(0, len(form_data.data)):
-                amplitude2.append((form_data.data[i]>>20)&0xfff)#高12bit为能量强度
-                distance.append((form_data.data[i]&0xfffff)/1000)#低20bit为距离
-                #将100°分成483个点，每个点的弧度
-                angle =abs(i-220)*(1.7453/500)
-                #print(angle)
-                flat_distance2.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
-            #print(len(form_data.data))
-
-        if (form_data.layer_index ==2) and form_data.packet_number ==2:#判断是否是第三层，layer_index分别为：0，1，2，3；同时判断是否为此层的第二个包
-            for i in range(0, len(form_data.data)):
-                amplitude2.append((form_data.data[i]>>20)&0xfff)#切割距离和强度
-                distance.append((form_data.data[i]&0xfffff)/1000)
-                angle =abs(i+291-220)*(1.7453/500)
-                #print(angle)
-                flat_distance2.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
-            flag2 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
-
-        if (form_data.layer_index ==3) and form_data.packet_number ==1:#判断是否是第四层，layer_index分别为：0，1，2，3；同时判断是否为此层的第一个包
             flag3 =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
             distance=[]#新建空白的distance列表；在后续循环中重新执行这一句等于清空原来的数据；因为下面用的都是append方法，所以需要先清空
             amplitude3= []#同上
@@ -171,87 +145,111 @@ def udp_receiver(q):
                 amplitude3.append((form_data.data[i]>>20)&0xfff)#高12bit为能量强度
                 distance.append((form_data.data[i]&0xfffff)/1000)#低20bit为距离
                 #将100°分成483个点，每个点的弧度
-                angle =abs(i-220)*(1.7453/500)
+                angle =abs(i-242)*(1.7453/483)
                 #print(angle)
                 flat_distance3.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
+            #print(len(form_data.data))
 
-        if (form_data.layer_index ==3) and form_data.packet_number ==2:#判断是否是第四层，layer_index分别为：0，1，2，3；同时判断是否为此层的第二个包
+        if (form_data.layer_index ==2) and form_data.packet_number ==2:#判断是否是第三层，layer_index分别为：0，1，2，3；同时判断是否为此层的第二个包
             for i in range(0, len(form_data.data)):
                 amplitude3.append((form_data.data[i]>>20)&0xfff)#切割距离和强度
                 distance.append((form_data.data[i]&0xfffff)/1000)
-                angle =abs(i+291-220)*(1.7453/500)
+                angle =abs(i+291-242)*(1.7453/483)
                 #print(angle)
                 flat_distance3.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
             flag3 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
+
+        if (form_data.layer_index ==3) and form_data.packet_number ==1:#判断是否是第四层，layer_index分别为：0，1，2，3；同时判断是否为此层的第一个包
+            flag2 =1 #改变flag的值，使画图线程不可以在接收数据和处理数据时更新图像
+            distance=[]#新建空白的distance列表；在后续循环中重新执行这一句等于清空原来的数据；因为下面用的都是append方法，所以需要先清空
+            amplitude2= []#同上
+            flat_distance2 = []
+            for i in range(0, len(form_data.data)):
+                amplitude2.append((form_data.data[i]>>20)&0xfff)#高12bit为能量强度
+                distance.append((form_data.data[i]&0xfffff)/1000)#低20bit为距离
+                #将100°分成483个点，每个点的弧度
+                angle =abs(i-242)*(1.7453/483)
+                #print(angle)
+                flat_distance2.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
+
+        if (form_data.layer_index ==3) and form_data.packet_number ==2:#判断是否是第四层，layer_index分别为：0，1，2，3；同时判断是否为此层的第二个包
+            for i in range(0, len(form_data.data)):
+                amplitude2.append((form_data.data[i]>>20)&0xfff)#切割距离和强度
+                distance.append((form_data.data[i]&0xfffff)/1000)
+                angle =abs(i+291-242)*(1.7453/483)
+                #print(angle)
+                flat_distance2.append(((form_data.data[i]&0xfffff)/1000)*math.cos(angle))
+            flag2 =0 #改变flag的值，告诉画图线程现在可以开始更新图像了
         if flag == 0 and flag1 == 0 and flag2 == 0 and flag3 == 0:
             data = [flat_distance,flat_distance1,flat_distance2,flat_distance3,
                     amplitude,amplitude1,amplitude2,amplitude3]
-        # print(f"length of layer1:{len(data[0])}")
-        # print(f"length of layer2:{len(data[1])}")
-        # print(f"length of layer3:{len(data[2])}")
-        # print(f"length of layer4:{len(data[3])}")
-        #q.put(data)
+            display_label0.config(text= f"{data[0][242]:.2f}")
+            display_label1.config(text= f"{data[1][242]:.2f}")
+            display_label2.config(text= f"{data[2][242]:.2f}")
+            display_label3.config(text= f"{data[3][242]:.2f}")
         q.append(data)
 
 # 更新图形
 def update_plots():
+    global sock
     #if not stop_flag.is_set() and not data_queue.empty():
     if not stop_flag.is_set():# and data_queue:
         position_amplitude_data = data_queue[-1]
-        # print(f"length of position_data1:{len(position_data[0])}")
-        # print(f"length of position_data2:{len(position_data[1])}")
-        # print(f"length of position_data3:{len(position_data[2])}")
-        # print(f"length of position_data4:{len(position_data[3])}")
         for i in range(4):
             ax[i].clear()
             #ax[i].lines=[]
 
-            if captured_flag == True:
+            if captured_flag == True and (len(position_amplitude_data[i]) == len(capture_position_amplitude_data[i])):
                 difference = np.array(position_amplitude_data[i])-np.array(capture_position_amplitude_data[i])
-                count = np.sum(np.abs(difference)>0.5)
-                if count > 50:
+                count = np.sum(np.abs(difference)>float(differ_textbox.get()))
+                if count > int(count_textbox.get()):
                     print(f"Alarm: layer {i},different counts {count}")
                     scatter_plot=ax[i].scatter(range(len(position_amplitude_data[i])), position_amplitude_data[i],
-                          c="red",vmin=32,vmax=2500,s=5)
+                          c="red",s=5)
                 else:
                     scatter_plot=ax[i].scatter(range(len(position_amplitude_data[i])), position_amplitude_data[i],
-                          c="green",vmin=32,vmax=2500,s=5)
+                          c="green",s=5)
             else:
                 scatter_plot=ax[i].scatter(range(len(position_amplitude_data[i])), position_amplitude_data[i],
                             c= position_amplitude_data[i+4],cmap='coolwarm',vmin=32,vmax=2500,s=5)                
             ax[i].set_title(f"Layer {i+1}")
             ax[i].set_xlim(0, 483)  # 设置x轴范围
             ax[i].set_ylim(0, 10)  # 设置y轴范围
-        # 在所有子图上共享一个颜色条
-        # cbar = fig.colorbar(scatter_plot, ax=ax)  # ax 是一个包含所有子图的列表
-        # cbar.set_label('Amplitude')
         plt.tight_layout()  # 自动调整子图间距        
         canvas.draw()
-        #canvas.draw_idle()  # 只重新绘制改动的部分
-        # canvas.flush_events()  # 处理图形事件
-        # root.update_idletasks()  # 更新图形任务
         root.after(10, update_plots)
 
 # 启动按钮点击事件
 def start_listener():
     global stop_flag
-    stop_flag.clear()
-    udp_thread = threading.Thread(target=udp_receiver, args=(data_queue,))
-    udp_thread.daemon = True
-    udp_thread.start()
-    update_plots()
+    global udp_thread
+    if stop_flag.is_set():
+        stop_flag.clear()
+        global sock
+        if sock == None:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.bind(('', 10000))
+            print("UDP receiver started")
+        if not hasattr(start_listener, "udp_thread") or not start_listener.udp_thread.is_alive():
+            udp_thread = threading.Thread(target=udp_receiver, args=(data_queue,))
+            udp_thread.daemon = True
+            udp_thread.start()
+            update_plots()
 
 # 停止按钮点击事件
 def stop_listener():
     global stop_flag
     stop_flag.set()
+    global sock
+    if sock:
+        sock.close()
+        sock = None
+        print("UDP receiver stopped")
 
 # 抓取按钮点击事件
 def capture_data():
-    #if not data_queue.empty():
     global captured_flag
     if data_queue:
-        #position_data = data_queue.get()
         global capture_position_amplitude_data
         capture_position_amplitude_data= data_queue[-1]
         fig, axs = plt.subplots(2, 2)
@@ -260,13 +258,19 @@ def capture_data():
         print("Captured")
         for i in range(4):
             ax[i].scatter(range(len(capture_position_amplitude_data[i])), capture_position_amplitude_data[i],
-                          c= capture_position_amplitude_data[i+4],cmap='coolwarm',vmin=32,vmax=2500,s=5)
+                          c="green",s=5)
             ax[i].set_title(f"Layer {i+1}")
             ax[i].set_xlim(0, 483)  # 设置x轴范围
             ax[i].set_ylim(0, 10)  # 设置y轴范围            
         plt.tight_layout()  # 自动调整子图间距
-        #plt.show()
+        fig.canvas.manager.window.title("Captured Data")
         fig.show()
+        if (capture_position_amplitude_data[0][242]) >float(height_textbox.get()) and (capture_position_amplitude_data[1][242]) >float(height_textbox.get()) and (capture_position_amplitude_data[2][242]) >float(height_textbox.get()) and (capture_position_amplitude_data[3][242]) >float(height_textbox.get()):
+            horizontal_display0.config(text= f"{math.sqrt((capture_position_amplitude_data[0][242])**2-float(height_textbox.get())**2):.2f}")
+            horizontal_display1.config(text= f"{math.sqrt((capture_position_amplitude_data[1][242])**2-float(height_textbox.get())**2):.2f}")
+            horizontal_display2.config(text= f"{math.sqrt((capture_position_amplitude_data[2][242])**2-float(height_textbox.get())**2):.2f}")
+            horizontal_display3.config(text= f"{math.sqrt((capture_position_amplitude_data[3][242])**2-float(height_textbox.get())**2):.2f}")
+            print(f"{capture_position_amplitude_data[0][242]},{float(height_textbox.get())}")
 
 # 关闭窗口时的事件处理函数
 def on_closing():
@@ -276,19 +280,23 @@ def on_closing():
 
 
 # 初始化 Tkinter 界面
-root = tk.Tk()
-root.title("UDP Listener")
+""" root = tk.Tk()
+root.title("R2300 application")
 
 # 创建队列
-#data_queue = queue.Queue()
 data_queue = deque(maxlen=1) 
 stop_flag = threading.Event()
+stop_flag.set()
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('', 10000))
+
 
 #global captured_flag 
 captured_flag = False
 
 # 创建图形
-fig, ax = plt.subplots(2, 2,figsize=(15, 8))
+fig, ax = plt.subplots(2, 2,figsize=(15, 7))
 ax = ax.flatten()
 
 # 创建画布
@@ -299,14 +307,213 @@ canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 button_frame = ttk.Frame(root)
 button_frame.pack(side=tk.TOP, pady=10)
 
+font_style = ('Helvetica', 18)  # 使用 Helvetica 字体，大小为 18
+start_button = tk.Button(button_frame, text="Start", command=start_listener, width=10, height=2,font=font_style)
+start_button.pack(side=tk.LEFT, padx=0)
+
+stop_button = tk.Button(button_frame, text="Stop", command=stop_listener, width=10, height=2,font=font_style)
+stop_button.pack(side=tk.LEFT, padx=50)
+
+capture_button = tk.Button(button_frame, text="Capture", command=capture_data, width=10, height=2,font=font_style)
+capture_button.pack(side=tk.LEFT, padx=20)
+
+#创建高度输入框和距离显示
+distance_frame = ttk.Frame(root)
+distance_frame.pack(side=tk.TOP)
+
+# 创建四个 Label 来显示距离
+distance_label0 = tk.Label(distance_frame, text="0层直线距离:", font=('Helvetica', 24))
+display_label0 = tk.Label(distance_frame, text="0", font=('Helvetica', 24),fg="blue")
+distance_label0.pack(side=tk.LEFT, padx=10)
+display_label0.pack(side=tk.LEFT, padx=10)
+distance_label1 = tk.Label(distance_frame, text="1层直线距离:", font=('Helvetica', 24))
+display_label1 = tk.Label(distance_frame, text="0", font=('Helvetica', 24),fg="blue")
+distance_label1.pack(side=tk.LEFT, padx=10)
+display_label1.pack(side=tk.LEFT, padx=10)
+distance_label2 = tk.Label(distance_frame, text="2层直线距离:", font=('Helvetica', 24))
+display_label2 = tk.Label(distance_frame, text="0", font=('Helvetica', 24),fg="blue")
+distance_label2.pack(side=tk.LEFT, padx=10)
+display_label2.pack(side=tk.LEFT, padx=10)
+distance_label3 = tk.Label(distance_frame, text="3层直线距离:", font=('Helvetica', 24))
+display_label3 = tk.Label(distance_frame, text="0", font=('Helvetica', 24),fg="blue")
+distance_label3.pack(side=tk.LEFT, padx=10)
+display_label3.pack(side=tk.LEFT, padx=10)
+
+#创建两个text box来输入阈值
+valve_frame = ttk.Frame(root)
+valve_frame.pack(side=tk.TOP)
+
+height_textbox = tk.Entry(valve_frame, width=10,font=('Helvetica', 24))
+differ_textbox = tk.Entry(valve_frame, width=10,font=('Helvetica', 24))
+count_textbox = tk.Entry(valve_frame, width=10, font=('Helvetica', 24))
+height_textbox.insert(0,"1")
+differ_textbox.insert(0,"0.2")
+count_textbox.insert(0, "10")
+height_lable = tk.Label(valve_frame, text="Height:", font=('Helvetica', 24))
+differ_lable = tk.Label(valve_frame, text="Differ:", font=('Helvetica', 24))
+count_lable = tk.Label(valve_frame, text="Count:", font=('Helvetica', 24))
+height_lable.pack(side=tk.LEFT, padx=10)
+height_textbox.pack(side=tk.LEFT, padx=10)
+differ_lable.pack(side=tk.LEFT, padx=10)
+differ_textbox.pack(side=tk.LEFT, padx=10)
+count_lable.pack(side=tk.LEFT, padx=10)
+count_textbox.pack(side=tk.LEFT, padx=10)
+
+#创建4个lable来显示水平距离
+horizontal_frame = ttk.Frame(root)
+horizontal_frame.pack(side=tk.TOP)
+horizontal_label0 = tk.Label(horizontal_frame, text="0层水平距离:", font=('Helvetica', 24))
+horizontal_display0 = tk.Label(horizontal_frame, text="0", font=('Helvetica', 24),fg="blue")
+horizontal_label0.pack(side=tk.LEFT, padx=10)
+horizontal_display0.pack(side=tk.LEFT, padx=10)
+horizontal_label1 = tk.Label(horizontal_frame, text="1层水平距离:", font=('Helvetica', 24))
+horizontal_display1 = tk.Label(horizontal_frame, text="0", font=('Helvetica', 24),fg="blue")
+horizontal_label1.pack(side=tk.LEFT, padx=10)
+horizontal_display1.pack(side=tk.LEFT, padx=10)
+horizontal_label2 = tk.Label(horizontal_frame, text="2层水平距离:", font=('Helvetica', 24))
+horizontal_display2 = tk.Label(horizontal_frame, text="0", font=('Helvetica', 24),fg="blue")
+horizontal_label2.pack(side=tk.LEFT, padx=10)
+horizontal_display2.pack(side=tk.LEFT, padx=10)
+horizontal_label3 = tk.Label(horizontal_frame, text="3层水平距离:", font=('Helvetica', 24))
+horizontal_display3 = tk.Label(horizontal_frame, text="0", font=('Helvetica', 24),fg="blue")
+horizontal_label3.pack(side=tk.LEFT, padx=10)
+horizontal_display3.pack(side=tk.LEFT, padx=10)
+
+
+
+# 绑定关闭窗口事件
+root.protocol("WM_DELETE_WINDOW", on_closing)
+
+# 进入主循环
+root.mainloop() """
+
+# 初始化 Tkinter 界面
+root = tk.Tk()
+root.title("R2300 application")
+
+# 设置全局样式
+style = ttk.Style()
+style.configure('TButton', font=('Helvetica', 18), padding=10)
+style.configure('TLabel', font=('Helvetica', 18))
+style.configure('TEntry', font=('Helvetica', 38), padding=10)
+
+# 创建队列
+data_queue = deque(maxlen=1) 
+stop_flag = threading.Event()
+stop_flag.set()
+
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.bind(('', 10000))
+
+# 全局标志
+captured_flag = False
+
+# 创建图形
+fig, ax = plt.subplots(2, 2, figsize=(15, 7))
+ax = ax.flatten()
+
+# 创建画布
+canvas = FigureCanvasTkAgg(fig, master=root)
+canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1, padx=20, pady=20)
+canvas.get_tk_widget().grid(row=0, column=0,columnspan=3, padx=10, pady=10)
+
+# 创建按钮
+button_frame = ttk.Frame(root)
+#button_frame.pack(side=tk.TOP, pady=10)
+button_frame.grid(row=1, column=0,columnspan=3, padx=10, pady=10)
+
 start_button = ttk.Button(button_frame, text="Start", command=start_listener)
-start_button.pack(side=tk.LEFT, padx=5)
+start_button.grid(row=0, column=0, padx=10, pady=10)
 
 stop_button = ttk.Button(button_frame, text="Stop", command=stop_listener)
-stop_button.pack(side=tk.LEFT, padx=5)
+stop_button.grid(row=0, column=1, padx=10, pady=10)
 
 capture_button = ttk.Button(button_frame, text="Capture", command=capture_data)
-capture_button.pack(side=tk.LEFT, padx=5)
+capture_button.grid(row=0, column=2, padx=10, pady=10)
+
+# 创建高度输入框和距离显示
+distance_frame = ttk.Frame(root)
+#distance_frame.pack(side=tk.LEFT, pady=10)
+distance_frame.grid(row=2, column=0, padx=1, pady=10)
+
+# 创建四个 Label 来显示距离
+distance_label0 = ttk.Label(distance_frame, text="0层直线距离:")
+distance_label0.grid(row=0, column=0, padx=10, pady=10)
+display_label0 = ttk.Label(distance_frame, text="0", foreground="blue")
+display_label0.grid(row=0, column=1, padx=10, pady=10)
+
+distance_label1 = ttk.Label(distance_frame, text="1层直线距离:")
+distance_label1.grid(row=1, column=0, padx=10, pady=10)
+display_label1 = ttk.Label(distance_frame, text="0", foreground="blue")
+display_label1.grid(row=1, column=1, padx=10, pady=10)
+
+distance_label2 = ttk.Label(distance_frame, text="2层直线距离:")
+distance_label2.grid(row=2, column=0, padx=10, pady=10)
+display_label2 = ttk.Label(distance_frame, text="0", foreground="blue")
+display_label2.grid(row=2, column=1, padx=10, pady=10)
+
+distance_label3 = ttk.Label(distance_frame, text="3层直线距离:")
+distance_label3.grid(row=3, column=0, padx=10, pady=10)
+display_label3 = ttk.Label(distance_frame, text="0", foreground="blue")
+display_label3.grid(row=3, column=1, padx=10, pady=10)
+
+""" # 创建分隔线
+separator = ttk.Separator(root, orient='vertical')
+separator.pack(side=tk.LEFT, fill=tk.Y, padx=20, pady=10) """
+
+# 创建4个 label 来显示水平距离
+horizontal_frame = ttk.Frame(root)
+#horizontal_frame.pack(pady=10)
+horizontal_frame.grid(row=2, column=1, padx=1, pady=10)
+
+horizontal_label0 = ttk.Label(horizontal_frame, text="0层水平距离:")
+horizontal_label0.grid(row=0, column=0, padx=10, pady=10)
+horizontal_display0 = ttk.Label(horizontal_frame, text="0", foreground="blue")
+horizontal_display0.grid(row=0, column=1, padx=10, pady=10)
+
+horizontal_label1 = ttk.Label(horizontal_frame, text="1层水平距离:")
+horizontal_label1.grid(row=1, column=0, padx=10, pady=10)
+horizontal_display1 = ttk.Label(horizontal_frame, text="0", foreground="blue")
+horizontal_display1.grid(row=1, column=1, padx=10, pady=10)
+
+horizontal_label2 = ttk.Label(horizontal_frame, text="2层水平距离:")
+horizontal_label2.grid(row=2, column=0, padx=10, pady=10)
+horizontal_display2 = ttk.Label(horizontal_frame, text="0", foreground="blue")
+horizontal_display2.grid(row=2, column=1, padx=10, pady=10)
+
+horizontal_label3 = ttk.Label(horizontal_frame, text="3层水平距离:")
+horizontal_label3.grid(row=3, column=0, padx=10, pady=10)
+horizontal_display3 = ttk.Label(horizontal_frame, text="0", foreground="blue")
+horizontal_display3.grid(row=3, column=1, padx=10, pady=10)
+
+# 创建分隔线
+""" separator2 = ttk.Separator(root, orient='vertical')
+separator2.pack(side=tk.LEFT, fill=tk.Y, padx=20, pady=10) """
+
+# 创建两个 text box 来输入阈值
+valve_frame = ttk.Frame(root)
+#valve_frame.pack(side=tk.RIGHT, pady=10)
+valve_frame.grid(row=2, column=2, padx=1, pady=10)
+
+height_textbox = ttk.Entry(valve_frame, width=10, font=('Helvetica', 18))
+height_textbox.insert(0, "1")
+height_lable = ttk.Label(valve_frame, text="Height:")
+height_lable.grid(row=0, column=0, padx=10, pady=10)
+height_textbox.grid(row=0, column=1, padx=10, pady=10)
+
+differ_textbox = ttk.Entry(valve_frame, width=10, font=('Helvetica', 18))
+differ_textbox.insert(0, "0.2")
+differ_lable = ttk.Label(valve_frame, text="Differ:")
+differ_lable.grid(row=1, column=0, padx=10, pady=10)
+differ_textbox.grid(row=1, column=1, padx=10, pady=10)
+
+count_textbox = ttk.Entry(valve_frame, width=10, font=('Helvetica', 18))
+count_textbox.insert(0, "10")
+count_lable = ttk.Label(valve_frame, text="Count:")
+count_lable.grid(row=2, column=0, padx=10, pady=10)
+count_textbox.grid(row=2, column=1, padx=10, pady=10)
+
+
 
 # 绑定关闭窗口事件
 root.protocol("WM_DELETE_WINDOW", on_closing)
