@@ -1,0 +1,15 @@
+[Unit]
+Description=Check Network Connection and Run Script
+After=graphical.target
+Wants=graphical.target
+
+[Service]
+Type=simple
+ExecStart=/home/pi/Desktop/R2300/check_network_and_run.sh
+Restart=always
+User=pi
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/pi/.Xauthority
+
+[Install]
+WantedBy=graphical.target
